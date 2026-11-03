@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 2: Our Heroes - 6th Grade B Intensive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-input {
+            background-color: #0f172a;
+            border: 2px solid #334155;
+            color: #38bdf8;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .hero-input:focus {
+            outline: none;
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+        }
+
+        .correct {
+            border-color: #22c55e !important;
+            background-color: rgba(34, 197, 94, 0.1) !important;
+            color: #4ade80 !important;
+        }
+
+        .incorrect {
+            border-color: #ef4444 !important;
+            background-color: rgba(239, 68, 68, 0.1) !important;
+            color: #f87171 !important;
+        }
+
+        .draggable-badge {
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .draggable-badge:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+
+        .drop-box {
+            transition: all 0.2s ease;
+        }
+
+        .drop-box.drag-over {
+            border-color: #fbbf24;
+            background-color: rgba(251, 191, 36, 0.15);
+        }
+
+        /* Printable certificate overrides */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .hero-card {
+                background: white !important;
+                border: 2px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                color: black !important;
+            }
+            .hero-input {
+                background: #f8fafc !important;
+                color: #000 !important;
+                border: 1px solid #94a3b8 !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16 selection:bg-amber-500 selection:text-slate-900">
+
+    <!-- TOP HEADER / NAV -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 py-4 no-print">
+        <div class="max-w-6xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-500/20 p-2 rounded-xl border border-amber-500/30">
+                    <span class="text-3xl">🛡️</span>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-extrabold gold-gradient-text">UNIT 2: OUR HEROES</h1>
+                    <p class="text-xs text-slate-400">Liceul Teoretic „Traian Lalescu” Brănești • Prof. Pistrui Raluca Elena</p>
+                </div>
+            </div>
+
+            <!-- SCORE & PROGRESS -->
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 flex items-center gap-3">
+                    <span class="text-amber-400 font-bold text-sm">Progress:</span>
+                    <div class="w-24 md:w-36 bg-slate-900 h-3 rounded-full overflow-hidden border border-slate-700">
+                        <div id="progress-bar" class="bg-gradient-to-r from-amber-500 to-emerald-400 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                    <span id="progress-text" class="text-xs font-bold text-slate-300">0%</span>
+                </div>
+
+                <div class="bg-amber-500/10 border border-amber-500/30 px-4 py-2 rounded-xl text-center">
+                    <span class="text-xs text-amber-300 uppercase tracking-wider font-semibold block">Score</span>
+                    <span id="score-display" class="text-xl font-extrabold text-amber-400">0 / 40</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 mt-8 space-y-8">
+
+        <!-- STUDENT PROFILE CARD -->
+        <section class="hero-card rounded-3xl p-6 border-amber-500/30">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">Student Name</label>
+                    <input type="text" id="student-name" placeholder="Enter your full name..." class="hero-input w-full px-4 py-2.5 rounded-xl text-sm" oninput="updateProfile()">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">Class</label>
+                    <input type="text" id="student-class" value="6th Grade B (Intensive)" readonly class="hero-input w-full px-4 py-2.5 rounded-xl text-sm bg-slate-900/50 text-slate-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">Date</label>
+                    <input type="date" id="worksheet-date" class="hero-input w-full px-4 py-2.5 rounded-xl text-sm" onchange="updateProfile()">
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 1: HEROIC JOBS, PERSONALITY & WAS/WERE -->
+        <section class="hero-card rounded-3xl p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
+                <span class="bg-amber-500 text-slate-950 font-black px-3 py-1 rounded-xl text-sm">PART 1</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-100">Heroic Jobs, Quality Suffixes & Was / Were</h2>
+            </div>
+
+            <!-- Task A: Vocabulary & Suffix -ness -->
+            <div class="mb-8 space-y-4">
+                <h3 class="text-md font-bold text-amber-400 flex items-center gap-2">
+                    <span>A. Complete the table with the correct noun ending in </span>
+                    <code class="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30 text-xs">-ness</code>
+                    <span> or match the job.</span>
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs text-slate-400 block mb-1">Adjective: Kind</span>
+                        <label class="text-sm font-semibold text-slate-200 block mb-2">Noun (-ness):</label>
+                        <input type="text" data-answer="kindness" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="type here...">
+                    </div>
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs text-slate-400 block mb-1">Adjective: Good</span>
+                        <label class="text-sm font-semibold text-slate-200 block mb-2">Noun (-ness):</label>
+                        <input type="text" data-answer="goodness" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="type here...">
+                    </div>
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs text-slate-400 block mb-1">Adjective: Happy</span>
+                        <label class="text-sm font-semibold text-slate-200 block mb-2">Noun (-ness):</label>
+                        <input type="text" data-answer="happiness" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="type here...">
+                    </div>
+                    <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                        <span class="text-xs text-slate-400 block mb-1">Adjective: Great</span>
+                        <label class="text-sm font-semibold text-slate-200 block mb-2">Noun (-ness):</label>
+                        <input type="text" data-answer="greatness" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="type here...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task B: Was / Were / Wasn't / Weren't -->
+            <div class="space-y-4">
+                <h3 class="text-md font-bold text-amber-400">B. Complete the historical sentences with <code class="text-slate-200 font-mono">was</code>, <code class="text-slate-200 font-mono">were</code>, <code class="text-slate-200 font-mono">wasn't</code>, or <code class="text-slate-200 font-mono">weren't</code>.</h3>
+                
+                <div class="space-y-3 bg-slate-900/40 p-5 rounded-2xl border border-slate-800/80">
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        1. Amelia Earhart 
+                        <input type="text" data-answer="was" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        a famous American pilot. She 
+                        <input type="text" data-answer="was" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        the first woman to fly solo across the Atlantic Ocean.
+                    </p>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        2. The 33 Chilean miners 
+                        <input type="text" data-answer="were" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        trapped underground for 69 days in 2010. They 
+                        <input type="text" data-answer="weren't" data-alt="were not" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        alone because the world watched their rescue.
+                    </p>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        3. 
+                        <input type="text" data-answer="Was" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        it easy to save the miners? No, it 
+                        <input type="text" data-answer="wasn't" data-alt="was not" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1">
+                        . It was very dangerous!
+                    </p>
+                    <p class="text-sm text-slate-300 leading-relaxed">
+                        4. Who 
+                        <input type="text" data-answer="were" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        your favorite heroes when you 
+                        <input type="text" data-answer="were" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        seven years old?
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: REGULAR PAST SIMPLE & PRONUNCIATION OF -ED -->
+        <section class="hero-card rounded-3xl p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
+                <span class="bg-amber-500 text-slate-950 font-black px-3 py-1 rounded-xl text-sm">PART 2</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-100">Regular Verbs & Final -ed Pronunciation</h2>
+            </div>
+
+            <!-- Drag/Click to Classify Pronunciation -->
+            <div class="mb-8">
+                <h3 class="text-md font-bold text-amber-400 mb-2">A. Classify the Regular Past Simple verbs by their <code class="bg-slate-800 text-amber-300 px-2 py-0.5 rounded">-ed</code> sound:</h3>
+                <p class="text-xs text-slate-400 mb-4">Click a verb badge, then click the correct pronunciation box!</p>
+
+                <!-- Word Bank Badges -->
+                <div id="word-bank" class="flex flex-wrap gap-2.5 p-4 bg-slate-900/60 rounded-2xl border border-slate-800 mb-6">
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="worked" data-sound="/t/">worked</span>
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="landed" data-sound="/ɪd/">landed</span>
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="saved" data-sound="/d/">saved</span>
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="walked" data-sound="/t/">walked</span>
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="wanted" data-sound="/ɪd/">wanted</span>
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="lived" data-sound="/d/">lived</span>
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="rescued" data-sound="/d/">rescued</span>
+                    <span class="draggable-badge bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow" data-verb="created" data-sound="/ɪd/">created</span>
+                </div>
+
+                <!-- Drop Zones -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="drop-box bg-slate-900/50 p-4 rounded-2xl border-2 border-dashed border-sky-500/40 text-center" data-category="/t/">
+                        <span class="bg-sky-500/20 text-sky-300 font-bold px-3 py-1 rounded-full text-xs border border-sky-500/30 block w-max mx-auto mb-2">/t/ Sound (e.g. walked)</span>
+                        <div class="drop-target min-h-[100px] flex flex-wrap gap-2 justify-center items-start pt-2"></div>
+                    </div>
+
+                    <div class="drop-box bg-slate-900/50 p-4 rounded-2xl border-2 border-dashed border-emerald-500/40 text-center" data-category="/d/">
+                        <span class="bg-emerald-500/20 text-emerald-300 font-bold px-3 py-1 rounded-full text-xs border border-emerald-500/30 block w-max mx-auto mb-2">/d/ Sound (e.g. lived)</span>
+                        <div class="drop-target min-h-[100px] flex flex-wrap gap-2 justify-center items-start pt-2"></div>
+                    </div>
+
+                    <div class="drop-box bg-slate-900/50 p-4 rounded-2xl border-2 border-dashed border-purple-500/40 text-center" data-category="/ɪd/">
+                        <span class="bg-purple-500/20 text-purple-300 font-bold px-3 py-1 rounded-full text-xs border border-purple-500/30 block w-max mx-auto mb-2">/ɪd/ Sound (e.g. started)</span>
+                        <div class="drop-target min-h-[100px] flex flex-wrap gap-2 justify-center items-start pt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sentence Transformation (Regular Past) -->
+            <div class="space-y-4">
+                <h3 class="text-md font-bold text-amber-400">B. Rewrite the sentences into the Past Simple affirmative or negative:</h3>
+                
+                <div class="space-y-3 bg-slate-900/40 p-5 rounded-2xl border border-slate-800">
+                    <div>
+                        <p class="text-sm text-slate-300 mb-1.5">1. Firefighters (rescue) <span class="text-amber-300 font-semibold">two cats</span> from the tree yesterday.</p>
+                        <input type="text" data-answer="rescued" class="quiz-input hero-input w-full md:w-80 px-3 py-1.5 rounded-lg text-sm" placeholder="Verb in Past Simple...">
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-300 mb-1.5">2. The courageous paramedic (not / hesitate) <span class="text-amber-300 font-semibold">to help</span> the injured driver.</p>
+                        <input type="text" data-answer="didn't hesitate" data-alt="did not hesitate" class="quiz-input hero-input w-full md:w-80 px-3 py-1.5 rounded-lg text-sm" placeholder="Negative Past Simple...">
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-300 mb-1.5">3. Engineers (design) <span class="text-amber-300 font-semibold">a special capsule</span> called 'Fénix 2' for the miners.</p>
+                        <input type="text" data-answer="designed" class="quiz-input hero-input w-full md:w-80 px-3 py-1.5 rounded-lg text-sm" placeholder="Verb in Past Simple...">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: THE CHILEAN MINE RESCUE (IRREGULAR VERBS) -->
+        <section class="hero-card rounded-3xl p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
+                <span class="bg-amber-500 text-slate-950 font-black px-3 py-1 rounded-xl text-sm">PART 3</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-100">Heroic Tales: Irregular Verbs in Action</h2>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl mb-4">
+                    <p class="text-xs md:text-sm text-amber-200">
+                        📖 <strong>Reading & Grammar:</strong> Read the story about <em>The Chilean Mine Rescue (2010)</em>. Fill in the gaps with the Past Simple form of the irregular verbs from the list below:
+                    </p>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">become</span>
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">break</span>
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">bring</span>
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">find</span>
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">fly</span>
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">lead</span>
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">see</span>
+                        <span class="bg-slate-800 text-slate-300 text-xs px-2.5 py-1 rounded-md font-mono border border-slate-700">send</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-4 text-sm md:text-base leading-relaxed text-slate-300">
+                    <p>
+                        In August 2010, part of the San José gold and copper mine in Chile collapsed and 
+                        <input type="text" data-answer="broke" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (break) the access tunnel. For 17 days, nobody knew if the 33 miners were alive.
+                    </p>
+                    <p>
+                        Finally, a drill machine reached the underground shelter and rescuers 
+                        <input type="text" data-answer="found" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (find) a note attached to the drill bit. It said: <em>"We are well in the shelter, the 33 of us."</em>
+                    </p>
+                    <p>
+                        Luis Urzúa, the shift foreman, 
+                        <input type="text" data-answer="led" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (lead) the men calmly during the ordeal. Rescue teams 
+                        <input type="text" data-answer="sent" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (send) food, medicine, and letters down to them. 
+                    </p>
+                    <p>
+                        On October 13, 2010, the rescue capsule 
+                        <input type="text" data-answer="brought" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (bring) the last miner back to the surface. Millions of viewers 
+                        <input type="text" data-answer="saw" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (see) the emotional moment live on TV. The miners 
+                        <input type="text" data-answer="became" class="quiz-input hero-input w-28 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (become) international symbols of hope and bravery. Later, experts 
+                        <input type="text" data-answer="flew" class="quiz-input hero-input w-24 px-2 py-1 rounded text-center text-sm inline-block mx-1"> 
+                        (fly) from around the world to study their incredible survival story.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: TIME EXPRESSIONS, 'USED TO' & DIALOGUES -->
+        <section class="hero-card rounded-3xl p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
+                <span class="bg-amber-500 text-slate-950 font-black px-3 py-1 rounded-xl text-sm">PART 4</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-100">Past Time Expressions & Real Talk (Speculation)</h2>
+            </div>
+
+            <!-- Task A: Time expressions & Used to -->
+            <div class="mb-8 space-y-4">
+                <h3 class="text-md font-bold text-amber-400">A. Complete with past expressions (<code class="text-slate-200">ago</code>, <code class="text-slate-200">last</code>, <code class="text-slate-200">in</code>) or <code class="text-slate-200">used to</code>:</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                        <p class="text-sm text-slate-300 mb-2">1. The Chilean mine rescue happened _____ 2010.</p>
+                        <input type="text" data-answer="in" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="in / last / ago...">
+                    </div>
+                    <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                        <p class="text-sm text-slate-300 mb-2">2. I watched an inspiring documentary about heroes _____ night.</p>
+                        <input type="text" data-answer="last" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="in / last / ago...">
+                    </div>
+                    <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                        <p class="text-sm text-slate-300 mb-2">3. Amelia Earhart disappeared over 80 years _____.</p>
+                        <input type="text" data-answer="ago" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="in / last / ago...">
+                    </div>
+                    <div class="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                        <p class="text-sm text-slate-300 mb-2">4. My grandfather _____ (be) a brave volunteer firefighter.</p>
+                        <input type="text" data-answer="used to be" class="quiz-input hero-input w-full px-3 py-2 rounded-lg text-sm" placeholder="used to be...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task B: Real Talk Questions & Answers -->
+            <div class="space-y-4">
+                <h3 class="text-md font-bold text-amber-400">B. Real Talk: Match the questions with the best responses.</h3>
+                
+                <div class="space-y-3 bg-slate-900/40 p-5 rounded-2xl border border-slate-800">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                        <span class="text-sm text-slate-300 font-medium">1. "Who is your role model and why?"</span>
+                        <select data-answer="B" class="quiz-select hero-input px-3 py-1.5 rounded-lg text-sm bg-slate-900">
+                            <option value="">-- Select Response --</option>
+                            <option value="A">A) Yes, he did! He saved three people.</option>
+                            <option value="B">B) My aunt, because she works as a paramedic and helps people every day.</option>
+                            <option value="C">C) I think they were very scared, but brave.</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                        <span class="text-sm text-slate-300 font-medium">2. "Did the lifeguard perform a brave rescue yesterday?"</span>
+                        <select data-answer="A" class="quiz-select hero-input px-3 py-1.5 rounded-lg text-sm bg-slate-900">
+                            <option value="">-- Select Response --</option>
+                            <option value="A">A) Yes, he did! He saved three people.</option>
+                            <option value="B">B) My aunt, because she works as a paramedic and helps people every day.</option>
+                            <option value="C">C) I think they were very scared, but brave.</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                        <span class="text-sm text-slate-300 font-medium">3. "What was it like for the miners trapped deep underground?"</span>
+                        <select data-answer="C" class="quiz-select hero-input px-3 py-1.5 rounded-lg text-sm bg-slate-900">
+                            <option value="">-- Select Response --</option>
+                            <option value="A">A) Yes, he did! He saved three people.</option>
+                            <option value="B">B) My aunt, because she works as a paramedic and helps people every day.</option>
+                            <option value="C">C) I think they were very scared, but brave.</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: QUICK HERO REVISION QUIZ -->
+        <section class="hero-card rounded-3xl p-6 md:p-8">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
+                <span class="bg-amber-500 text-slate-950 font-black px-3 py-1 rounded-xl text-sm">PART 5</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-100">Hero Mastery Check (Multiple Choice)</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Q1 -->
+                <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <p class="text-sm font-bold text-slate-200">1. Which verb has the <code class="text-amber-300">/ɪd/</code> sound at the end?</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq1" value="A" class="quiz-radio accent-amber-500"> A) worked
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq1" value="B" class="quiz-radio accent-amber-500" data-correct="true"> B) landed
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq1" value="C" class="quiz-radio accent-amber-500"> C) saved
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <p class="text-sm font-bold text-slate-200">2. What is the past simple form of <code class="text-amber-300">bring</code>?</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq2" value="A" class="quiz-radio accent-amber-500"> A) bringed
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq2" value="B" class="quiz-radio accent-amber-500" data-correct="true"> B) brought
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq2" value="C" class="quiz-radio accent-amber-500"> C) brang
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <p class="text-sm font-bold text-slate-200">3. Choose the correct negative Past Simple sentence:</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq3" value="A" class="quiz-radio accent-amber-500"> A) They didn't was scared.
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq3" value="B" class="quiz-radio accent-amber-500" data-correct="true"> B) She didn't lose hope.
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq3" value="C" class="quiz-radio accent-amber-500"> C) She didn't lost hope.
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <p class="text-sm font-bold text-slate-200">4. Complete: "The firefighters _____ very brave during the emergency."</p>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq4" value="A" class="quiz-radio accent-amber-500" data-correct="true"> A) were
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq4" value="B" class="quiz-radio accent-amber-500"> B) was
+                        </label>
+                        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 cursor-pointer text-sm">
+                            <input type="radio" name="mcq4" value="C" class="quiz-radio accent-amber-500"> C) did be
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACTION CONTROLS & RESULTS -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 py-6 no-print">
+            <button onclick="checkWorksheet()" class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-lg px-8 py-4 rounded-2xl shadow-xl transform active:scale-95 transition">
+                🏆 Check Answers & Calculate Score
+            </button>
+            <button onclick="window.print()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-base px-6 py-4 rounded-2xl border border-slate-700 shadow-md">
+                🖨️ Print Certificate / Summary
+            </button>
+        </div>
+
+        <!-- CERTIFICATE / SUMMARY (Visible on completion & print) -->
+        <section id="certificate" class="hero-card rounded-3xl p-8 border-2 border-amber-500 hidden text-center space-y-4">
+            <div class="text-5xl mb-2">🏅</div>
+            <h2 class="text-3xl font-extrabold text-amber-400">HERO ACADEMY CERTIFICATE OF COMPLETION</h2>
+            <p class="text-slate-300">This certifies that pre-intermediate student</p>
+            <h3 id="cert-name" class="text-2xl font-bold text-sky-400 border-b border-dashed border-slate-600 inline-block px-6 py-1">____________________</h3>
+            <p class="text-slate-300">has successfully completed <strong class="text-amber-300">Unit 2: Our Heroes</strong> (Past Simple Mastery).</p>
+            
+            <div class="flex justify-center gap-8 py-4 text-left border-y border-slate-700/80 my-4 max-w-md mx-auto">
+                <div>
+                    <span class="text-xs text-slate-400 block uppercase">Final Score</span>
+                    <span id="cert-score" class="text-2xl font-black text-amber-400">0 / 40</span>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 block uppercase">Evaluation</span>
+                    <span id="cert-grade" class="text-2xl font-black text-emerald-400">Excellent</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end pt-4 text-xs text-slate-400">
+                <div class="text-left">
+                    <p>Liceul Teoretic „Traian Lalescu” Brănești</p>
+                    <p>Class 6B Intensive</p>
+                </div>
+                <div class="text-right">
+                    <p>Teacher: <strong>Prof. Pistrui Raluca Elena</strong></p>
+                    <p>Date: <span id="cert-date">__/__/2026</span></p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Audio Synthesizer (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.2); // A2
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'fanfare') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, index) => {
+                    const noteOsc = audioCtx.createOscillator();
+                    const noteGain = audioCtx.createGain();
+                    noteOsc.connect(noteGain);
+                    noteGain.connect(audioCtx.destination);
+                    noteOsc.frequency.value = freq;
+                    noteGain.gain.setValueAtTime(0.12, audioCtx.currentTime + index * 0.1);
+                    noteGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + index * 0.1 + 0.25);
+                    noteOsc.start(audioCtx.currentTime + index * 0.1);
+                    noteOsc.stop(audioCtx.currentTime + index * 0.1 + 0.25);
+                });
+            }
+        }
+
+        // Set Default Date
+        document.getElementById('worksheet-date').valueAsDate = new Date();
+
+        function updateProfile() {
+            const name = document.getElementById('student-name').value || '____________________';
+            const date = document.getElementById('worksheet-date').value;
+            document.getElementById('cert-name').textContent = name;
+            document.getElementById('cert-date').textContent = date;
+        }
+
+        // --- Interactive Badge Click & Drop Logic for Part 2 ---
+        let selectedBadge = null;
+
+        document.querySelectorAll('.draggable-badge').forEach(badge => {
+            badge.addEventListener('click', () => {
+                document.querySelectorAll('.draggable-badge').forEach(b => b.classList.remove('ring-4', 'ring-amber-400', 'scale-105'));
+                selectedBadge = badge;
+                badge.classList.add('ring-4', 'ring-amber-400', 'scale-105');
+            });
+        });
+
+        document.querySelectorAll('.drop-box').forEach(box => {
+            box.addEventListener('click', () => {
+                if (selectedBadge) {
+                    box.querySelector('.drop-target').appendChild(selectedBadge);
+                    selectedBadge.classList.remove('ring-4', 'ring-amber-400', 'scale-105');
+                    selectedBadge = null;
+                    playSound('correct');
+                    updateLiveProgress();
+                }
+            });
+        });
+
+        // --- Main Grading Engine ---
+        function checkWorksheet() {
+            let totalPoints = 0;
+            let maxPoints = 0;
+
+            // 1. Text Inputs Verification
+            const inputs = document.querySelectorAll('.quiz-input');
+            inputs.forEach(input => {
+                maxPoints++;
+                const userVal = input.value.trim().toLowerCase();
+                const correctVal = input.getAttribute('data-answer').toLowerCase();
+                const altVal = input.getAttribute('data-alt') ? input.getAttribute('data-alt').toLowerCase() : null;
+
+                if (userVal === correctVal || (altVal && userVal === altVal)) {
+                    input.classList.remove('incorrect');
+                    input.classList.add('correct');
+                    totalPoints++;
+                } else {
+                    input.classList.remove('correct');
+                    input.classList.add('incorrect');
+                }
+            });
+
+            // 2. Select Elements Verification
+            const selects = document.querySelectorAll('.quiz-select');
+            selects.forEach(select => {
+                maxPoints++;
+                const userVal = select.value;
+                const correctVal = select.getAttribute('data-answer');
+
+                if (userVal === correctVal) {
+                    select.classList.remove('incorrect');
+                    select.classList.add('correct');
+                    totalPoints++;
+                } else {
+                    select.classList.remove('correct');
+                    select.classList.add('incorrect');
+                }
+            });
+
+            // 3. Pronunciation Classification Verification
+            const dropBoxes = document.querySelectorAll('.drop-box');
+            dropBoxes.forEach(box => {
+                const category = box.getAttribute('data-category');
+                const badges = box.querySelectorAll('.draggable-badge');
+                badges.forEach(badge => {
+                    maxPoints++;
+                    const badgeSound = badge.getAttribute('data-sound');
+                    if (badgeSound === category) {
+                        badge.classList.remove('bg-slate-800', 'border-amber-500/30');
+                        badge.classList.add('bg-emerald-950', 'text-emerald-300', 'border-emerald-500');
+                        totalPoints++;
+                    } else {
+                        badge.classList.remove('bg-slate-800', 'border-amber-500/30');
+                        badge.classList.add('bg-rose-950', 'text-rose-300', 'border-rose-500');
+                    }
+                });
+            });
+
+            // Account for missing badges in total score capacity
+            const unclassifiedBadges = document.querySelectorAll('#word-bank .draggable-badge');
+            maxPoints += unclassifiedBadges.length;
+
+            // 4. MCQ Check
+            const radioGroups = ['mcq1', 'mcq2', 'mcq3', 'mcq4'];
+            radioGroups.forEach(groupName => {
+                maxPoints++;
+                const selected = document.querySelector(`input[name="${groupName}"]:checked`);
+                if (selected && selected.hasAttribute('data-correct')) {
+                    selected.parentElement.classList.add('border-emerald-500', 'bg-emerald-950/40');
+                    totalPoints++;
+                } else if (selected) {
+                    selected.parentElement.classList.add('border-rose-500', 'bg-rose-950/40');
+                }
+            });
+
+            // Calculate percentage
+            const percentage = Math.round((totalPoints / maxPoints) * 100);
+
+            // Update Displays
+            document.getElementById('score-display').textContent = `${totalPoints} / ${maxPoints}`;
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+            document.getElementById('progress-text').textContent = `${percentage}%`;
+
+            // Certificate Update
+            const cert = document.getElementById('certificate');
+            cert.classList.remove('hidden');
+            document.getElementById('cert-score').textContent = `${totalPoints} / ${maxPoints}`;
+            
+            let grade = 'Needs Practice';
+            if (percentage >= 90) grade = 'Outstanding 🌟';
+            else if (percentage >= 75) grade = 'Very Good 👏';
+            else if (percentage >= 50) grade = 'Satisfactory 👍';
+            document.getElementById('cert-grade').textContent = grade;
+
+            // Audio & Celebration
+            if (percentage === 100) {
+                playSound('fanfare');
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            } else if (percentage >= 60) {
+                playSound('correct');
+            } else {
+                playSound('wrong');
+            }
+
+            // Smooth scroll to certificate
+            cert.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateLiveProgress() {
+            const inputs = document.querySelectorAll('.quiz-input');
+            let filled = 0;
+            inputs.forEach(i => { if (i.value.trim() !== '') filled++; });
+            const total = inputs.length + 8; // approx
+            const pct = Math.min(100, Math.round((filled / total) * 100));
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-text').textContent = `${pct}%`;
+        }
+
+        document.querySelectorAll('.quiz-input').forEach(input => {
+            input.addEventListener('input', updateLiveProgress);
+        });
+    </script>
+</body>
+</html>
